@@ -32,9 +32,7 @@ export class DBInstance {
     profiles: FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData>;
     triples: FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData>;
     activity: FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData>;
-    userNotifications: (
-      userId: string
-    ) => FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData>;
+    notifications: FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData>;
   };
 
   constructor() {
@@ -49,11 +47,7 @@ export class DBInstance {
       profiles: this.firestore.collection(CollectionNames.Profiles),
       triples: this.firestore.collection(CollectionNames.Triples),
       activity: this.firestore.collection(CollectionNames.Activity),
-      userNotifications: (userId: string) =>
-        this.firestore
-          .collection(CollectionNames.Users)
-          .doc(userId)
-          .collection(CollectionNames.Notifications),
+      notifications: this.firestore.collection(CollectionNames.Notifications),
     };
   }
 

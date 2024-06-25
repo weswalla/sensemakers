@@ -132,17 +132,12 @@ describe('050-autofetch-no-autopost', () => {
           notificationsIds.map(async (pendingId) => {
             const notification =
               await services.notifications.notificationsRepo.get(
-                userId,
                 pendingId,
                 manager,
                 true
               );
 
-            return services.notifications.getFull(
-              userId,
-              notification.id,
-              manager
-            );
+            return services.notifications.getFull(notification.id, manager);
           })
         );
 

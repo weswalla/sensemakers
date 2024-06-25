@@ -55,12 +55,10 @@ export class NotificationService {
   }
 
   async getFull(
-    userId: string,
     notificationId: string,
     manager: TransactionManager
   ): Promise<NotificationFull> {
     const notification = await this.notificationsRepo.get(
-      userId,
       notificationId,
       manager,
       true
@@ -92,7 +90,7 @@ export class NotificationService {
 
       const pendingNotifications = await Promise.all(
         pendingIds.map((notificationId) =>
-          this.getFull(userId, notificationId, manager)
+          this.getFull(notificationId, manager)
         )
       );
 
