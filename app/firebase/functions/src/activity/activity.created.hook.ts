@@ -8,7 +8,6 @@ import {
   NotificationStatus,
 } from '../@shared/types/types.notifications';
 import { PlatformPostPublishStatus } from '../@shared/types/types.platform.posts';
-// import { AutopostOption, PLATFORM } from '../@shared/types/types.user';
 import { logger } from '../instances/logger';
 import { createServices } from '../instances/services';
 import { UsersHelper } from '../users/users.helper';
