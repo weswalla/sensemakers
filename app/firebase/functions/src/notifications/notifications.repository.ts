@@ -12,7 +12,7 @@ export class NotificationsRepository extends BaseRepository<
   NotificationCreate
 > {
   constructor(protected db: DBInstance) {
-    super(db.collections.activity);
+    super(db.collections.notifications);
   }
   public async getUnotifiedOfUser(userId: string, manager: TransactionManager) {
     const status_property: keyof Notification = 'status';
