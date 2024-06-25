@@ -33,7 +33,7 @@ import { getTestServices } from './test.services';
 const DEBUG_PREFIX = `030-process`;
 const DEBUG = false;
 
-describe('051-autofetch-autopost', () => {
+describe.only('051-autofetch-autopost', () => {
   const services = getTestServices({
     time: 'real',
     twitter: USE_REAL_TWITTER ? 'real' : 'mock-publish',
@@ -136,17 +136,12 @@ describe('051-autofetch-autopost', () => {
           notificationsIds.map(async (pendingId) => {
             const notification =
               await services.notifications.notificationsRepo.get(
-                userId,
                 pendingId,
                 manager,
                 true
               );
 
-            return services.notifications.getFull(
-              userId,
-              notification.id,
-              manager
-            );
+            return services.notifications.getFull(notification.id, manager);
           })
         );
 

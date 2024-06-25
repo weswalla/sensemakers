@@ -3,41 +3,23 @@ import {
   NotificationCreate,
   NotificationStatus,
 } from '../@shared/types/types.notifications';
-import { DefinedIfTrue } from '../@shared/types/types.user';
 import { DBInstance } from '../db/instance';
 import { BaseRepository } from '../db/repo.base';
 import { TransactionManager } from '../db/transaction.manager';
 
-export class NotificationsRepository {
-  constructor(protected db: DBInstance) {}
-
-  private getBaseRepo(userId: string) {
-    return new BaseRepository<Notification, NotificationCreate>(
-      this.db.collections.userNotifications(userId)
-    );
+export class NotificationsRepository extends BaseRepository<
+  Notification,
+  NotificationCreate
+> {
+  constructor(protected db: DBInstance) {
+    super(db.collections.notifications);
   }
-
-  public create(notification: NotificationCreate, manager: TransactionManager) {
-    const repo = this.getBaseRepo(notification.userId);
-    return repo.create(notification, manager);
-  }
-
-  public async get<T extends boolean, R = Notification>(
-    userId: string,
-    notificationId: string,
-    manager: TransactionManager,
-    shouldThrow?: T
-  ): Promise<DefinedIfTrue<T, R>> {
-    const repo = this.getBaseRepo(userId);
-    return repo.get(notificationId, manager, shouldThrow);
-  }
-
   public async getUnotifiedOfUser(userId: string, manager: TransactionManager) {
     const status_property: keyof Notification = 'status';
 
-    const query = await this.db.collections
-      .userNotifications(userId)
-      .where(status_property, '==', NotificationStatus.pending);
+    const query = this.db.collections.notifications
+      .where(status_property, '==', NotificationStatus.pending)
+      .where('userId', '==', userId);
 
     const snap = await manager.query(query);
     const ids = snap.docs.map((doc) => doc.id);
@@ -50,9 +32,7 @@ export class NotificationsRepository {
     notificationId: string,
     manager: TransactionManager
   ) {
-    const ref = this.db.collections
-      .userNotifications(userId)
-      .doc(notificationId);
+    const ref = this.db.collections.notifications.doc(notificationId);
 
     manager.update(ref, {
       status: NotificationStatus.sent,
