@@ -1,5 +1,6 @@
 import express from 'express';
 import * as functions from 'firebase-functions';
+import * as logger from 'firebase-functions/logger';
 import {
   FirestoreEvent,
   QueryDocumentSnapshot,
@@ -120,8 +121,16 @@ exports[AUTOFETCH_POSTS_TASK] = onTaskDispatched(
     memory: envDeploy.CONFIG_MEMORY,
     minInstances: envDeploy.CONFIG_MININSTANCE,
     secrets,
+    retryConfig: {
+      maxAttempts: 1,
+      minBackoffSeconds: 300,
+    },
+    rateLimits: {
+      maxConcurrentDispatches: 1,
+    },
   },
   async (req) => {
+    logger.log('calling the onTaskDispatched autoFetchUserPosts task directly');
     void (await autofetchUserPosts(req));
   }
 );

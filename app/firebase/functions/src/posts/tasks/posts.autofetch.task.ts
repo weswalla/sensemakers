@@ -29,7 +29,7 @@ export const triggerAutofetchPosts = async () => {
 };
 
 export const autofetchUserPosts = async (req: Request) => {
-  logger.debug(`autofetchUserPosts: userId: ${req.data.userId}`);
+  logger.debug(`autofetchUserPosts: userId: ${req.data.userId}`, DEBUG_PREFIX);
 
   const userId = req.data.userId as string;
 
