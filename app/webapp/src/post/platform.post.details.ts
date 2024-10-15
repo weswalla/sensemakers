@@ -4,10 +4,10 @@ import { I18Keys } from '../i18n/i18n';
 import { BlueskyThread } from '../shared/types/types.bluesky';
 import { MastodonThread } from '../shared/types/types.mastodon';
 import { PlatformPost } from '../shared/types/types.platform.posts';
+import { PLATFORM } from '../shared/types/types.platforms';
 import { AppPostFull } from '../shared/types/types.posts';
 import { TwitterThread } from '../shared/types/types.twitter';
-import { PLATFORM } from '../shared/types/types.user';
-import { extractRKeyFromURI } from '../shared/utils/bluesky.utils';
+import { parseBlueskyURI } from '../shared/utils/bluesky.utils';
 
 export interface GenericPlatformPostDetails {
   authorName?: string;
@@ -63,28 +63,40 @@ export const getPlatformPostDetails = (
     return '';
   })();
 
-  const url = (() => {
+  const { url, authorName, authorAvatarUrl } = (() => {
     if (platformPost && platformPost.posted) {
       if (platformPost.platformId === PLATFORM.Twitter) {
         const twitterThread = platformPost.posted.post as TwitterThread;
-        return `https://x.com/${twitterThread.author.username}/status/${platformPost.posted.post_id}`;
+        return {
+          url: `https://x.com/${twitterThread.author.username}/status/${platformPost.posted.post_id}`,
+          authorName: twitterThread.author.name,
+          authorAvatarUrl: twitterThread.author.profile_image_url,
+        };
       }
 
       if (platformPost.platformId === PLATFORM.Mastodon) {
         const mastodonThread = platformPost.posted.post as MastodonThread;
-        return mastodonThread.posts[0].url || mastodonThread.posts[0].uri;
+        return {
+          url: mastodonThread.posts[0].url || mastodonThread.posts[0].uri,
+          authorName: mastodonThread.author.displayName,
+          authorAvatarUrl: mastodonThread.author.avatar,
+        };
       }
 
       if (platformPost.platformId === PLATFORM.Bluesky) {
         const blueskyThread = platformPost.posted.post as BlueskyThread;
-        return `https://bsky.app/profile/${blueskyThread.author.handle}/post/${extractRKeyFromURI(platformPost.posted.post_id)}`;
+        return {
+          url: `https://bsky.app/profile/${blueskyThread.author.username}/post/${parseBlueskyURI(platformPost.posted.post_id).rkey}`,
+          authorName: blueskyThread.author.displayName,
+          authorAvatarUrl: blueskyThread.author.avatar,
+        };
       }
     }
 
-    return '';
+    return { url: '', authorName: '', authorAvatarUrl: '' };
   })();
 
   const timestampMs = platformPost.posted?.timestampMs;
 
-  return { label, url, timestampMs };
+  return { label, url, timestampMs, authorName, authorAvatarUrl };
 };

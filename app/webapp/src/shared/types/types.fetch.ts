@@ -1,5 +1,5 @@
+import { IDENTITY_PLATFORM, PLATFORM } from './types.platforms';
 import { AppPostFull } from './types.posts';
-import { PLATFORM, PUBLISHABLE_PLATFORM } from './types.user';
 
 export interface OurTokenConfig {
   tokenSecret: string;
@@ -18,7 +18,6 @@ export interface HandleSignupResult {
 export interface FetchParams {
   sinceId?: string;
   untilId?: string;
-  platformIds?: PUBLISHABLE_PLATFORM[];
   expectedAmount: number;
 }
 
@@ -41,10 +40,7 @@ export interface PublishPostPayload {
 
 export interface AddUserDataPayload {
   username: string;
-  mastodonServer?: string;
-  platformId: PLATFORM;
+  platformId: IDENTITY_PLATFORM;
   amount: number;
   latest?: boolean;
-  userId?: string;
-  isGhost: true;
 }

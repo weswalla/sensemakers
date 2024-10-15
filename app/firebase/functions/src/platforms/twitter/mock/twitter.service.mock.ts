@@ -6,21 +6,21 @@ import {
   PlatformPostPosted,
   PlatformPostPublish,
 } from '../../../@shared/types/types.platform.posts';
+import { PLATFORM } from '../../../@shared/types/types.platforms';
+import { AccountProfileCreate } from '../../../@shared/types/types.profiles';
 import {
-  TwitterAccountSignupData,
+  TwitterAccountCredentials,
+  TwitterAccountDetails,
+  TwitterCredentials,
   TwitterDraft,
   TwitterGetContextParams,
   TwitterSignupContext,
+  TwitterSignupData,
   TwitterThread,
-  TwitterUserDetails,
 } from '../../../@shared/types/types.twitter';
-import {
-  TestUserCredentials,
-  UserDetailsBase,
-} from '../../../@shared/types/types.user';
+import { TestUserCredentials } from '../../../@shared/types/types.user';
 import { ENVIRONMENTS } from '../../../config/ENVIRONMENTS';
 import { APP_URL, NODE_ENV } from '../../../config/config.runtime';
-import { TransactionManager } from '../../../db/transaction.manager';
 import { logger } from '../../../instances/logger';
 import { getTestCredentials } from '../../mock/test.users';
 import { TwitterService } from '../twitter.service';
@@ -94,7 +94,7 @@ export const initThreads = (
 /** make private methods public */
 type MockedType = Omit<TwitterService, 'fetchInternal' | 'getUserClient'> & {
   fetchInternal: TwitterService['fetchInternal'];
-  getUserClient: TwitterService['getUserClient'];
+  getClient: TwitterService['getClient'];
 };
 
 /**
@@ -113,7 +113,7 @@ export const getTwitterMock = (
   const mocked = spy(twitterService) as unknown as MockedType;
 
   if (type.publish) {
-    when(mocked.publish(anything(), anything())).thenCall(
+    when(mocked.publish(anything())).thenCall(
       (postPublish: PlatformPostPublish<TwitterDraft>) => {
         logger.warn(`called twitter publish mock`, postPublish);
 
@@ -127,7 +127,7 @@ export const getTwitterMock = (
             conversation_id: (++state.latestConvId).toString(),
             text: postPublish.draft.text,
             edit_history_tweet_ids: [],
-            author_id: postPublish.userDetails.user_id,
+            author_id: 'dummy-user-id',
             created_at: new Date().toISOString(),
           },
         };
@@ -158,9 +158,9 @@ export const getTwitterMock = (
   if (type.fetch) {
     when(mocked.fetchInternal(anything(), anything(), anything())).thenCall(
       async (
+        user_id: string,
         params: PlatformFetchParams,
-        userDetails: UserDetailsBase,
-        manager: TransactionManager
+        credentials?: TwitterCredentials
       ): Promise<TwitterThread[]> => {
         if (NODE_ENV === ENVIRONMENTS.LOCAL) {
           if (params.since_id) {
@@ -170,24 +170,29 @@ export const getTwitterMock = (
                 tweets: [
                   getSampleTweet(
                     (Number(params.since_id) + 100).toString(),
-                    userDetails.user_id,
+                    user_id,
                     Date.now(),
                     (Number(params.since_id) + 100).toString(),
                     ''
                   ),
                 ],
                 author: {
-                  id: userDetails.user_id,
-                  name: userDetails.profile.name,
-                  username: userDetails.profile.username,
-                  profile_image_url: userDetails.profile.profile_image_url,
+                  id: 'dummy-author-id',
+                  name: 'dummy-author-name',
+                  username: 'dummy-author-username',
+                  profile_image_url:
+                    'https://pbs.twimg.com/profile_images/1783977034038882304/RGn66lGT_normal.jpg',
                 },
               },
             ];
           } else if (params.until_id) {
             return [];
           } else {
-            return getTimelineMock(userDetails);
+            return getTimelineMock(
+              'dummy-user-id',
+              'dummy-user-name',
+              'dummy-user-username'
+            );
           }
         }
 
@@ -212,11 +217,10 @@ export const getTwitterMock = (
   }
 
   if (type.get) {
-    when(mocked.get(anything(), anything(), anything())).thenCall(
+    when(mocked.get(anything(), anything())).thenCall(
       async (
         post_id: string,
-        userDetails: UserDetailsBase,
-        manager: TransactionManager
+        credentials?: TwitterAccountCredentials
       ): Promise<PlatformPostPosted<TwitterThread>> => {
         const thread = state.threads.find(
           (thread) => thread.conversation_id === post_id
@@ -259,7 +263,7 @@ export const getTwitterMock = (
       }
     );
     when(mocked.handleSignupData(anything())).thenCall(
-      (data: TwitterAccountSignupData): TwitterUserDetails => {
+      (data: TwitterSignupData) => {
         const user_id = data.codeChallenge;
         const testCredentials = getTestCredentials(
           process.env.TEST_USER_ACCOUNTS as string
@@ -272,29 +276,40 @@ export const getTwitterMock = (
         if (!currentUserCredentials) {
           throw new Error('test credentials not found');
         }
-        return {
+        const twitterAccountDetails: TwitterAccountDetails = {
           user_id: currentUserCredentials.twitter.id,
-          signupDate: 0,
+          signupDate: Date.now(),
+          credentials: {
+            read: {
+              accessToken:
+                'ZWJzaEJCU1BSaFZvLUIwRFNCNHNXVlQtTV9mY2VSaDlOSk5ETjJPci0zbmJtOjE3MTk0MzM5ODkyNTM6MTowOmF0OjE',
+              refreshToken:
+                'U2xBMGpRSkFucE9yQzAxSnJlM0pRci1tQzJlR2dfWEY2MEpNc2daYkF6VjZSOjE3MTk0MzM5ODkyNTM6MTowOnJ0OjE',
+              expiresIn: 7200,
+              expiresAtMs: 1719441189590,
+            },
+          },
+        };
+        const twitterProfile: AccountProfileCreate = {
+          platformId: PLATFORM.Twitter,
+          user_id: currentUserCredentials.twitter.id,
           profile: {
-            name: currentUserCredentials.twitter.username,
-            profile_image_url:
-              'https://pbs.twimg.com/profile_images/1783977034038882304/RGn66lGT_normal.jpg',
             id: currentUserCredentials.twitter.id,
+            displayName: currentUserCredentials.twitter.username,
             username: currentUserCredentials.twitter.username,
+            avatar:
+              'https://pbs.twimg.com/profile_images/1783977034038882304/RGn66lGT_normal.jpg',
+            description: 'test description',
           },
-          read: {
-            accessToken:
-              'ZWJzaEJCU1BSaFZvLUIwRFNCNHNXVlQtTV9mY2VSaDlOSk5ETjJPci0zbmJtOjE3MTk0MzM5ODkyNTM6MTowOmF0OjE',
-            refreshToken:
-              'U2xBMGpRSkFucE9yQzAxSnJlM0pRci1tQzJlR2dfWEY2MEpNc2daYkF6VjZSOjE3MTk0MzM5ODkyNTM6MTowOnJ0OjE',
-            expiresIn: 7200,
-            expiresAtMs: 1719441189590,
-          },
+        };
+        return {
+          accountDetails: twitterAccountDetails,
+          profile: twitterProfile,
         };
       }
     );
   }
-  when(mocked.getPosts(anything(), anything(), anything())).thenCall(
+  when(mocked.getPosts(anything(), anything())).thenCall(
     async (): Promise<TweetV2LookupResult> => {
       return {
         data: [

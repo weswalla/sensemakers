@@ -1,9 +1,6 @@
 import { NotificationFreq } from '../@shared/types/types.notifications';
-import {
-  AutopostOption,
-  PLATFORM,
-  UserSettings,
-} from '../@shared/types/types.user';
+import { PLATFORM } from '../@shared/types/types.platforms';
+import { AutopostOption, UserSettings } from '../@shared/types/types.user';
 import { envRuntime } from './typedenv.runtime';
 
 /** Verify that all needed env variables were provided */
@@ -14,9 +11,10 @@ const mandatory: Array<keyof typeof envRuntime> = [
   'TWITTER_CLIENT_ID',
   'TWITTER_CLIENT_SECRET',
   'TWITTER_BEARER_TOKEN',
-  'MASTODON_ACCESS_TOKEN',
+  'MASTODON_ACCESS_TOKENS',
   'BLUESKY_APP_PASSWORD',
   'BLUESKY_USERNAME',
+  'BLUESKY_SERVICE_URL',
   'PROJECT_ID',
   'NANOPUBS_PUBLISH_SERVERS',
   'NP_PUBLISH_RSA_PRIVATE_KEY',
@@ -47,9 +45,13 @@ export const TWITTER_API_URL = 'https://api.twitter.com';
 export const TWITTER_CLIENT_ID = envRuntime.TWITTER_CLIENT_ID;
 export const TWITTER_CLIENT_SECRET = envRuntime.TWITTER_CLIENT_SECRET;
 export const TWITTER_BEARER_TOKEN = envRuntime.TWITTER_BEARER_TOKEN;
-export const MASTODON_ACCESS_TOKEN = envRuntime.MASTODON_ACCESS_TOKEN;
+
+export const MASTODON_ACCESS_TOKENS = envRuntime.MASTODON_ACCESS_TOKENS;
+
 export const BLUESKY_APP_PASSWORD = envRuntime.BLUESKY_APP_PASSWORD;
 export const BLUESKY_USERNAME = envRuntime.BLUESKY_USERNAME;
+export const BLUESKY_SERVICE_URL = 'https://bsky.social';
+
 export const ADMIN_API_KEY = envRuntime.ADMIN_API_KEY;
 
 export const TWITTER_CALLBACK_URL = envRuntime.TWITTER_CALLBACK_URL;

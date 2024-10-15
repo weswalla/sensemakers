@@ -2,13 +2,10 @@ import express from 'express';
 
 import { getPublicFeedController } from './feed/feed.controller';
 import {
-  addUserDataController,
   approvePostController,
   createDraftPostController,
   getPostController,
   getUserPostsController,
-  getUserProfileController,
-  getUserProfilePostsController,
   parsePostController,
   unpublishPlatformPostController,
   updatePostController,
@@ -32,10 +29,7 @@ router.post('/auth/settings', setUserSettingsController);
 router.post('/auth/me', getLoggedUserController);
 router.post('/auth/setMagicEmail', setUserEmailMagic);
 
-router.post('/users/profile', getUserProfileController);
-
 router.post('/posts/getOfUser', getUserPostsController);
-router.post('/posts/getProfilePosts', getUserProfilePostsController);
 
 router.post('/posts/get', getPostController);
 router.post('/posts/createDraft', createDraftPostController);
@@ -44,5 +38,4 @@ router.post('/posts/parse', parsePostController);
 router.post('/posts/update', updatePostController);
 router.post('/posts/unpublish', unpublishPlatformPostController);
 
-adminRouter.post('/addUserData', addUserDataController);
 router.post('/feed/get', getPublicFeedController);

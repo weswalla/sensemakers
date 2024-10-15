@@ -1,24 +1,16 @@
 import { mastodon } from 'masto';
 
-import { UserDetailsBase } from './types.user';
+import { AccountDetailsBase } from './types.user';
 
-export interface MastodonUserProfile {
-  id: string;
-  username: string;
-  displayName: string;
-  avatar: string;
-  mastodonServer: string;
-}
-
-export interface MastodonUserCredentials {
+export interface MastodonAccountCredentials {
+  server: string;
   accessToken: string;
 }
 
-export type MastodonUserDetails = UserDetailsBase<
-  MastodonUserProfile,
-  MastodonUserCredentials,
-  MastodonUserCredentials
->;
+export type MastodonAccountDetails = AccountDetailsBase<{
+  write?: MastodonAccountCredentials;
+  read?: MastodonAccountCredentials;
+}>;
 
 export interface MastodonGetContextParams {
   mastodonServer: string;
@@ -46,14 +38,7 @@ export interface MastodonAccessTokenSignupData {
 
 export type MastodonSignupData =
   | MastodonOAuthSignupData
-  | MastodonAccessTokenSignupData
-  | MastodonGhostSignupData;
-
-export type MastodonGhostSignupData = {
-  username: string;
-  mastodonServer: string;
-  isGhost: true;
-};
+  | MastodonAccessTokenSignupData;
 
 export interface MastodonThread {
   thread_id: string;
@@ -63,3 +48,10 @@ export interface MastodonThread {
 
 export type MastodonPost = mastodon.v1.Status;
 export type MastodonAccount = mastodon.v1.Account;
+
+export interface MastodonSigninCredentials {
+  id: string;
+  username: string;
+  mastodonServer: string;
+  accessToken: string;
+}

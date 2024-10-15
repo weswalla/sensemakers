@@ -3,13 +3,11 @@ import { RequestHandler } from 'express';
 import {
   AddUserDataPayload,
   FetchParams,
-  PublishPostPayload,
-  UserProfileQuery,
 } from '../../@shared/types/types.fetch';
+import { PublishPostPayload } from '../../@shared/types/types.fetch';
 import {
   PostUpdatePayload,
   PostsQuery,
-  ProfilePostsQuery,
   UnpublishPlatformPostPayload,
 } from '../../@shared/types/types.posts';
 import { IS_EMULATOR } from '../../config/config.runtime';
@@ -22,8 +20,6 @@ import {
   approvePostSchema,
   createDraftPostSchema,
   getUserPostsQuerySchema,
-  getUserProfilePostsSchema,
-  getUserProfileSchema,
   postIdValidation,
   retractPostSchema,
   updatePostSchema,
@@ -50,64 +46,6 @@ export const getUserPostsController: RequestHandler = async (
     const posts = await postsManager.getOfUser({ ...queryParams, userId });
 
     if (DEBUG) logger.debug(`${request.path}: posts`, { posts, userId });
-    response.status(200).send({ success: true, data: posts });
-  } catch (error: any) {
-    logger.error('error', error);
-    response.status(500).send({ success: false, error: error.message });
-  }
-};
-
-/**
- * PUBLIC get user profile from a platform and username
- * */
-export const getUserProfileController: RequestHandler = async (
-  request,
-  response
-) => {
-  try {
-    const payload = (await getUserProfileSchema.validate(
-      request.body
-    )) as UserProfileQuery;
-
-    logger.debug(`${request.path} - payload`, { payload });
-    const { users } = getServices(request);
-    const profile = await users.getUserProfileFromPlatformUsername(
-      payload.platformId,
-      payload.username
-    );
-
-    if (DEBUG) logger.debug(`${request.path}: users`, { profile });
-
-    response.status(200).send({ success: true, data: profile });
-  } catch (error: any) {
-    logger.error('error', error);
-    response.status(500).send({ success: false, error: error.message });
-  }
-};
-
-/**
- * PUBLIC get user posts from the DB (does not fetch for more)
- * */
-export const getUserProfilePostsController: RequestHandler = async (
-  request,
-  response
-) => {
-  try {
-    const queryParams = (await getUserProfilePostsSchema.validate(
-      request.body
-    )) as ProfilePostsQuery;
-
-    logger.debug(`${request.path} - query parameters`, { queryParams });
-    const { postsManager } = getServices(request);
-
-    const posts = await postsManager.getUserProfile(
-      queryParams.platformId,
-      queryParams.username,
-      queryParams.fetchParams,
-      queryParams.labelsUris
-    );
-    if (DEBUG) logger.debug(`${request.path}: posts`, { posts });
-
     response.status(200).send({ success: true, data: posts });
   } catch (error: any) {
     logger.error('error', error);
@@ -167,7 +105,13 @@ export const approvePostController: RequestHandler = async (
       request.body
     )) as PublishPostPayload;
 
-    await postsManager.publishPost(payload.post, payload.platformIds, userId);
+    await postsManager.publishPost(
+      payload.post,
+      payload.platformIds,
+      undefined,
+      false,
+      userId
+    );
 
     if (DEBUG)
       logger.debug(`${request.path}: approvePost`, {
@@ -258,7 +202,7 @@ export const updatePostController: RequestHandler = async (
         true
       );
 
-      if (post.authorId !== userId) {
+      if (post.authorUserId !== userId) {
         throw new Error(`Post can only be edited by the author`);
       }
 
@@ -306,7 +250,7 @@ export const unpublishPlatformPostController: RequestHandler = async (
   }
 };
 
-export const addUserDataController: RequestHandler = async (
+export const addAccountDataController: RequestHandler = async (
   request,
   response
 ) => {
@@ -315,39 +259,34 @@ export const addUserDataController: RequestHandler = async (
 
     const payload = request.body as AddUserDataPayload;
 
-    const result = await services.db.run(async (manager) => {
-      /** handle signup and refetch user posts */
-      return await services.users.handleSignup(
+    const profile = await services.db.run(async (manager) => {
+      return services.users.getOrCreateProfileByUsername(
         payload.platformId,
-        payload,
-        manager,
-        payload.userId
+        payload.username,
+        manager
       );
     });
-    if (!result) {
-      throw new Error('user not found');
+
+    if (!profile) {
+      throw new Error(
+        `unable to find profile for ${payload.username} on ${payload.platformId}`
+      );
     }
-
-    const user = await services.db.run(async (manager) => {
-      return await services.users.repo.getUser(result.userId, manager);
-    });
-
-    if (!user) {
-      throw new Error('user not found');
-    }
-
     /** the value of sinceId or untilId doesn't matter, as long as it exists, then it will be converted to appropriate fetch params */
     const fetchParams: FetchParams = payload.latest
-      ? { expectedAmount: payload.amount, sinceId: user.userId }
-      : { expectedAmount: payload.amount, untilId: user.userId };
+      ? { expectedAmount: payload.amount, sinceId: profile.user_id }
+      : { expectedAmount: payload.amount, untilId: profile.user_id };
 
-    const fetchedPosts = await services.postsManager.fetchUser({
-      userId: user?.userId,
-      user,
-      params: fetchParams,
+    const fetchedPosts = await services.db.run(async (manager) => {
+      return services.postsManager.fetchAccount(
+        payload.platformId,
+        profile?.user_id,
+        fetchParams,
+        manager
+      );
     });
 
-    if (DEBUG) logger.debug(`${request.path}: addUserData`, payload);
+    if (DEBUG) logger.debug(`${request.path}: addAccountData`, payload);
 
     response.status(200).send({ success: true, data: fetchedPosts });
   } catch (error) {
