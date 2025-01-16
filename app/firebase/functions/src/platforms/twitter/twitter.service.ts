@@ -13,7 +13,6 @@ import {
 } from '../../@shared/types/types.fetch';
 import {
   FetchedResult,
-  PlatformPost,
   PlatformPostCreate,
   PlatformPostDeleteDraft,
   PlatformPostDraft,
@@ -54,8 +53,10 @@ import { TimeService } from '../../time/time.service';
 import { UsersHelper } from '../../users/users.helper';
 import { UsersRepository } from '../../users/users.repository';
 import { PlatformService, WithCredentials } from '../platforms.interface';
+import { ThreadHandlerMixin } from '../thread.handler.interface';
 import { expansions, tweetFields, userFields } from './twitter.config';
 import { TwitterServiceClient } from './twitter.service.client';
+import { TwitterThreadHandler } from './twitter.thread.handler';
 import {
   convertToAppTweetBase,
   convertToAppTweets,
@@ -78,8 +79,13 @@ const DEBUG = false;
 const MAX_OLDER_THAN = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 /** Twitter service handles all interactions with Twitter API */
+
+const TwitterServiceBase = ThreadHandlerMixin(
+  TwitterServiceClient,
+  TwitterThreadHandler
+);
 export class TwitterService
-  extends TwitterServiceClient
+  extends TwitterServiceBase
   implements
     PlatformService<
       TwitterSignupContext,
@@ -664,20 +670,5 @@ export class TwitterService
     } catch (e: any) {
       throw new Error(handleTwitterError(e));
     }
-  }
-  isPartOfMainThread(
-    rootPost: PlatformPost,
-    post: PlatformPostCreate
-  ): boolean {
-    return true;
-  }
-  mergeBrokenThreads(
-    rootPost: PlatformPost,
-    post: PlatformPostCreate
-  ): PlatformPostPosted {
-    return {} as PlatformPostPosted;
-  }
-  isRootThread(post: PlatformPostCreate): boolean {
-    return true;
   }
 }
