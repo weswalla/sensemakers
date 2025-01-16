@@ -12,7 +12,6 @@ import {
 } from '../../@shared/types/types.mastodon';
 import {
   FetchedResult,
-  PlatformPost,
   PlatformPostCreate,
   PlatformPostDraft,
   PlatformPostDraftApproval,
@@ -43,6 +42,7 @@ import { TimeService } from '../../time/time.service';
 import { UsersHelper } from '../../users/users.helper';
 import { UsersRepository } from '../../users/users.repository';
 import { PlatformService } from '../platforms.interface';
+import { MastodonThreadHandler } from './mastodon.thread.handler';
 import {
   cleanMastodonContent,
   convertMastodonPostsToThreads,
@@ -57,6 +57,7 @@ export interface MastodonServiceConfig {
 }
 
 export class MastodonService
+  extends MastodonThreadHandler
   implements
     PlatformService<
       MastodonSignupContext,
@@ -68,7 +69,9 @@ export class MastodonService
     protected time: TimeService,
     protected usersRepo: UsersRepository,
     protected config: MastodonServiceConfig
-  ) {}
+  ) {
+    super();
+  }
 
   protected async createApp(params: MastodonGetContextParams) {
     if (DEBUG) logger.debug('createApp', { params }, DEBUG_PREFIX);
@@ -534,20 +537,5 @@ export class MastodonService
     };
 
     return profile;
-  }
-  isPartOfMainThread(
-    rootPost: PlatformPost,
-    post: PlatformPostCreate
-  ): boolean {
-    return true;
-  }
-  mergeBrokenThreads(
-    rootPost: PlatformPost,
-    post: PlatformPostCreate
-  ): PlatformPostPosted {
-    return {} as PlatformPostPosted;
-  }
-  isRootThread(post: PlatformPostCreate): boolean {
-    return true;
   }
 }
