@@ -19,7 +19,6 @@ import {
 import { PlatformFetchParams } from '../../@shared/types/types.fetch';
 import {
   FetchedResult,
-  PlatformPost,
   PlatformPostCreate,
   PlatformPostDraft,
   PlatformPostDraftApproval,
@@ -44,6 +43,8 @@ import { TimeService } from '../../time/time.service';
 import { UsersHelper } from '../../users/users.helper';
 import { UsersRepository } from '../../users/users.repository';
 import { PlatformService, WithCredentials } from '../platforms.interface';
+import { ThreadHandlerMixin } from '../thread.handler.interface';
+import { BlueskyThreadHandler } from './bluesky.thread.handler';
 import {
   cleanBlueskyContent,
   convertBlueskyPostsToThreads,
@@ -60,7 +61,14 @@ export interface BlueskyServiceConfig {
   BLUESKY_APP_PASSWORD: string;
 }
 
+class BlueskyServiceClient {} // empty for now, will be implemented after merge.
+const BlueskyServiceBase = ThreadHandlerMixin(
+  BlueskyServiceClient,
+  BlueskyThreadHandler
+);
+
 export class BlueskyService
+  extends BlueskyServiceBase
   implements
     PlatformService<
       BlueskySignupContext,
@@ -73,7 +81,9 @@ export class BlueskyService
     protected usersRepo: UsersRepository,
     protected config: BlueskyServiceConfig,
     protected agent?: AtpAgent
-  ) {}
+  ) {
+    super();
+  }
 
   private async getClient(
     credentials?: BlueskyCredentials
@@ -642,40 +652,5 @@ export class BlueskyService
       }
     }
     return posts;
-  }
-  isPartOfMainThread(
-    rootPost: PlatformPost<BlueskyThread>,
-    post: PlatformPostCreate<BlueskyThread>
-  ): boolean {
-    if (!rootPost.posted || !post.posted) {
-      throw new Error('Unexpected undefined posted');
-    }
-    if (rootPost.posted.post_id !== post.posted.post_id) return false;
-    const rootThreadPosts = rootPost.posted.post.posts;
-    const lastRootThreadPost = rootThreadPosts[rootThreadPosts.length - 1];
-    const newThreadPosts = post.posted.post.posts;
-    const firstNewThreadPost = newThreadPosts[0];
-
-    if (firstNewThreadPost.record.reply?.parent.uri === lastRootThreadPost.uri)
-      return true;
-
-    return false;
-  }
-  mergeBrokenThreads(
-    rootPost: PlatformPost<BlueskyThread>,
-    post: PlatformPostCreate<BlueskyThread>
-  ): PlatformPostPosted {
-    if (!rootPost.posted || !post.posted) {
-      throw new Error('Unexpected undefined posted');
-    }
-    const mergedThread = [
-      ...rootPost.posted?.post.posts,
-      ...post.posted?.post.posts,
-    ];
-    rootPost.posted.post.posts = mergedThread;
-    return rootPost.posted;
-  }
-  isRootThread(post: PlatformPostCreate): boolean {
-    return post.posted?.post.posts[0].uri === post.posted?.post_id;
   }
 }

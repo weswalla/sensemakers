@@ -1,7 +1,6 @@
 import { PlatformFetchParams } from '../@shared/types/types.fetch';
 import {
   FetchedResult,
-  PlatformPost,
   PlatformPostCreate,
   PlatformPostDeleteDraft,
   PlatformPostDraft,
@@ -20,6 +19,7 @@ import {
   AccountDetailsBase,
   AppUserRead,
 } from '../@shared/types/types.user';
+import { ThreadHandler } from './thread.handler.interface';
 
 export interface WithCredentials {
   credentials?: AccountCredentials;
@@ -56,7 +56,8 @@ export interface PlatformService<
   SignupData = any,
   UserDetails extends AccountDetailsBase = AccountDetailsBase,
   DraftType = any,
-> extends IdentityService<SignupContext, SignupData, UserDetails> {
+> extends IdentityService<SignupContext, SignupData, UserDetails>,
+    ThreadHandler {
   get(
     post_id: string,
     credentials?: AccountCredentials
@@ -90,11 +91,4 @@ export interface PlatformService<
     post: AppPostFull,
     author: AppUserRead
   ): Promise<PlatformPostDeleteDraft | undefined>;
-
-  isPartOfMainThread(rootPost: PlatformPost, post: PlatformPostCreate): boolean;
-  mergeBrokenThreads(
-    rootPost: PlatformPost,
-    post: PlatformPostCreate
-  ): PlatformPostPosted;
-  isRootThread(post: PlatformPostCreate): boolean;
 }
